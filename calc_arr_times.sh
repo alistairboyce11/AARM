@@ -2,13 +2,14 @@
 
 # C1.1
 source ~/.profile
-mac=`pwd | sed 's/\// /g' | awk '{print $2}'`
-mv bad_files.txt old_bad_files.txt
+mac=`echo $USER`
+
+if [[ -f bad_files.txt ]]; then
+	mv bad_files.txt old_bad_files.txt
+fi
 
 rm All_auto_corr_errors.txt All_d.txt Conv_vs_ISC_pick_errors.txt
 rm *_event_SUMMARY.txt *_phase_SUMMARY.txt
-
-# reference_file="/Users/$mac/Dropbox/ADAPTIVE_STACKING/ISC_arrival_checks/ISC_reference_picks.txt"
 
 reference_file="/Volumes/TRANS_AB/DATA/AFRICA/ISC_DATA/ISC_reference_picks.txt"
 
@@ -18,7 +19,7 @@ reference_file="/Volumes/TRANS_AB/DATA/AFRICA/ISC_DATA/ISC_reference_picks.txt"
 # Qaulity control parameters
 ISC_CUTOFF=2.0
 SNR_CUTOFF=1
-XC_CUTOFF=0.5
+XC_CUTOFF=0.2
 AUTO_CUTOFF=0.5
 
 PLOTTING=$2
@@ -29,7 +30,7 @@ PLOTTING=$2
 # Predicted arrivals - T1
 # Rel-Arr alignment - T0
 
-if [ $# == 0 ];
+if [[ $# == 0 ]];
 then
 	echo " NO Weighting scheme given"
 	echo "USEAGE:   calc_arr_times.sh <SCHEME> <PLOTTING> <RERUN>"
@@ -39,11 +40,11 @@ then
 	exit
 fi
 
-if [ $1 == "XC" ];
+if [[ $1 == "XC" ]];
 then
 	WEIGHTING_SCHEME=XC
 else
-	if [ $1 == "NOISE" ];
+	if [[ $1 == "NOISE" ]];
 	then
 		WEIGHTING_SCHEME=NOISE
 	else
@@ -58,7 +59,7 @@ fi
 
 # Set up the loop parameters - helps save time for re-runs after zipping bad files.
 
-if [ $3 == "RERUN" ];
+if [[ $3 == "RERUN" ]];
 then
 	# echo $3
 	file_list=`awk '{print $1}' bad_events.txt`
@@ -66,7 +67,7 @@ else
 	# echo "use the normal for loop"
 	rm bad_events.txt
 	file_list="??????????????"
-	# file_list="20060307182047"
+	# file_list=$3
 	
 fi
 
@@ -74,6 +75,21 @@ fi
 
 echo "Starting the loop HERE"
 for event in $file_list; do
+
+
+# Move events with less than 3 files to POOR.
+f_list=`echo $event/*HZ | grep -v *HZ |  wc -w `
+if [[ $f_list -lt 3 ]]; then
+	echo "Less than 3 Files present"
+	cd $event
+	rm stack.sac stack2.sac stack2_auto.sac
+	rm *out *stk *stk2 *corr *new gmt* *.m *.s *.cut *.cut2 *.sgf *.pdf *txt
+	gunzip *gz
+	cd ..
+	echo "Moving "$event" to ./POOR/."
+	mv $event ./POOR/
+	continue
+fi
 
 echo $event
 cd $event
@@ -205,7 +221,7 @@ gmt gmtmath -S XC_coefficients.out MEAN = XC_mean.out # mean correlation co-effi
 # Weight a second stack using the noise or using the XC peak (and shift the traces by the offset of the XC peak i.e. a measure of trace similarity to the stack)
 # Parameter set at top of script!
 # C1.8
-if [ $WEIGHTING_SCHEME == "NOISE" ];
+if [[ $WEIGHTING_SCHEME == "NOISE" ]];
 then
 	echo " "
 	echo "DO the NOISE scheme"
@@ -216,9 +232,9 @@ then
 	# The extra 2 is a naming convention.
 	
 	### ADD the weighting function here....
-	# Please not this functionality was removed at review as for our application it was found to offer little improvement of the final stack.
+	# Please note this functionality was removed at review as for our application it was found to offer little improvement of the final stack.
 	# We leave the funcitonality to weight the stack non-linearly in future uses if required.
-	/usr/local/bin/AARM_weight_function.sh SNR_norm.out SNR_norm_weighted.out
+	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_weight_function.sh SNR_norm.out SNR_norm_weighted.out
 	paste SNR.txt SNR_norm.out SNR_norm_weighted.out > Noise_weightings.txt # filename, SNR, normalized SNR, weighted normalized SNR
 	awk '{print "addstack "$1".stk2 weight "$4}' Noise_weightings.txt > addstack.m
 	# Make Macro to write unique filesnames these files
@@ -226,7 +242,7 @@ then
 	echo "read *stk; write append 2" >> mk_stk2.m # Should already be normalized from .stk
 # C1.9
 else
-	if [ $WEIGHTING_SCHEME == "XC" ];
+	if [[ $WEIGHTING_SCHEME == "XC" ]];
 	then
 		echo " "
 		echo "Do XC scheme"
@@ -241,7 +257,7 @@ else
 		
 		#### ADD the weighting function here
 		# Linear weighting function as above.
-		/usr/local/bin/AARM_weight_function.sh correlation_norm.out correlation_norm_weighted.out
+		/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_weight_function.sh correlation_norm.out correlation_norm_weighted.out
 		paste correlation.out correlation_norm.out correlation_norm_weighted.out > correlation_weightings.txt # filename, correlation co-efficient, XC location (correction), normalized correlation co-efficient, weighted norm correlation co-efficient
 
 		awk '{print "addstack "$1" weight "$5}' correlation_weightings.txt | sed 's/\.stk.cut.corr /.new.stk2 /g' > addstack.m 
@@ -249,16 +265,30 @@ else
 
 		# Make small adjustments to Rel-Arr alignment based on XC peak shift from 0 - should improve the stack....
 		# Don't overwrite ?HZ files with new corrected stack times, save a subset with append .new in sac macro
-
+		# Use QC parameters to check applied XC peak shift is not greater than XC_CUTOFF, else, gzip in bad_files.txt
+		# Cannot force to zero as this affects error analysis.
+		
+		echo $XC_CUTOFF > ADJ_HIGH.out
+		echo "-"$XC_CUTOFF > ADJ_LOW.out
+		
 		for file in *.?HZ; do
 			grep $file correlation.out | awk '{print $3}' > adjust.out # T0 adjustment
+			
+			IN_ADJ_RANGE=`gmt gmtmath adjust.out ADJ_LOW.out ADJ_HIGH.out INRANGE =`
+			if [[ $IN_ADJ_RANGE != 1 ]]; then
+				awk -v var=$XC_CUTOFF '{print "Suggested XC peak shift: "$1" not in range +/- "var}' adjust.out
+				echo " Can gzip the file "$file" ...."
+				echo "gzip "$event"/"$file >> ../bad_files.txt 
+			fi
 			grep $file orig_headers.out | awk '{print $3}' > old_T0.out  # old T0
 			gmt gmtmath old_T0.out adjust.out ADD = new_T0.out
 			new_T0=`awk '{print $1}' new_T0.out`
 			echo "read "$file"; chnhdr t0 "$new_T0"; write append .new" >> correct_T0.m # Paste the new T1 header into *.bhz.new
 			echo "m normalize.m "$file".new.stk2" >> norm_stk2.m # will individually normalize the new.stk2 files later on.
 		done
-
+		
+		rm ADJ_HIGH.out ADJ_LOW.out
+		
 		# Prepare files before stacking
 		# Normalize the traces using macro normalize.m (Files *stk2 are overwritten)
 
@@ -292,6 +322,7 @@ fi
 # Restack using RMS-noise or XC co-efficient weighting scheme
 # Pick the onset on stack2.sac
 
+
 # C 1.10
 sac << sacend3
 m mk_stk2.m
@@ -324,14 +355,17 @@ quit
 sacend3
 # rm addstack.m
 
-
 # C1.10.1 
 #  Inlcude a little cut that removes events that have poor stacks and thus no arrival time pick
 
 if [[ "$(sachdrinfo stack2.sac a)" == *"UNDEFINED"* ]]; then
 	echo "No pick present - Move event to POOR and continue"
+	rm stack.sac stack2.sac stack2_auto.sac
+	rm *out *stk *stk2 *corr *new gmt* *.m *.s *.cut *.cut2 *.sgf *.pdf *txt
 	cd ..
 	mv $event ./POOR/
+	grep -v $event bad_files.txt > bad_files.temp
+	mv bad_files.temp bad_files.txt
 	continue
 fi
 
@@ -354,7 +388,7 @@ then
 	
 	# OR
 	# Remove all low SNR traces before stacking..... : 
-	# gzip ./*$STAT*
+	# gzip ./*$STAT*HZ
 	
 fi
 done<SNR.txt
@@ -500,40 +534,40 @@ awk '{print $7}'  TT_calc_results.txt > d.txt # absolute traveltime residual
 # C1.15
 # Checking the difference to ISC picks here
 
-day=`echo $event | awk '{print substr($0,1,4)"-"substr($0,5,2)"-"substr($0,7,2)}'`
-time=`echo $event | awk '{print substr($0,9,2)":"substr($0,11,2)":"substr($0,13,2)}'`
-
-grep $day $reference_file | grep $time | sed 's/\,/ /g' > ISC_picks.out
-station_list=`awk '{print $6}' ISC_picks.out | sort -u`
-echo "ISC Stations available include : "$station_list
-
-for station in $station_list; do
-	stat_info=`grep $station ISC_picks.out | awk 'NR==1'`
-	EQ_source_error=`echo $stat_info | awk '{print $5}'`
-	ISC_TT=`echo $stat_info | awk '{print $10}'`
-	if [ $EQ_source_error != "0.00" ]; then
-		# echo "there is a problem skip this station"
-		continue
-	else
-		Conv_stack_TT=`grep $station TT_calc_results.txt | awk '{print $5}'`
-		if [ -z "$Conv_stack_TT" ]; then
-			# echo "do nothing here"
-			continue
-		else
-			echo $Conv_stack_TT" - "$ISC_TT | bc >> Conv_stack-ISC_picks.txt
-			ISC_ERR=`echo $Conv_stack_TT" - "$ISC_TT | bc`
-			FILE=`ls *HZ | grep $station | awk 'NR==1'`
-			if (( $(echo "$ISC_ERR $ISC_CUTOFF" | awk '{print ($1 > $2)}') )) || (( $(echo "$ISC_ERR -$ISC_CUTOFF" | awk '{print ($1 < $2)}') ));
-			then
-				echo " difference between converted pick and ISC pick for "$station" is greater than $ISC_CUTOFF/-$ISC_CUTOFF...."
-				echo " Could reject the station "$station"...."
-				echo " Can gzip the file "$FILE"...."
-				echo "Check the file Conv_stack-ISC_picks.txt"
-				echo "gzip "$event"/"$FILE >> ../bad_files.txt # " # ISC_ERR"
-			fi
-		fi
-	fi
-done
+# day=`echo $event | awk '{print substr($0,1,4)"-"substr($0,5,2)"-"substr($0,7,2)}'`
+# time=`echo $event | awk '{print substr($0,9,2)":"substr($0,11,2)":"substr($0,13,2)}'`
+#
+# grep $day $reference_file | grep $time | sed 's/\,/ /g' > ISC_picks.out
+# station_list=`awk '{print $6}' ISC_picks.out | sort -u`
+# echo "ISC Stations available include : "$station_list
+#
+# for station in $station_list; do
+# 	stat_info=`grep $station ISC_picks.out | awk 'NR==1'`
+# 	EQ_source_error=`echo $stat_info | awk '{print $5}'`
+# 	ISC_TT=`echo $stat_info | awk '{print $10}'`
+# 	if [ $EQ_source_error != "0.00" ]; then
+# 		# echo "there is a problem skip this station"
+# 		continue
+# 	else
+# 		Conv_stack_TT=`grep $station TT_calc_results.txt | awk '{print $5}'`
+# 		if [ -z "$Conv_stack_TT" ]; then
+# 			# echo "do nothing here"
+# 			continue
+# 		else
+# 			echo $Conv_stack_TT" - "$ISC_TT | bc >> Conv_stack-ISC_picks.txt
+# 			ISC_ERR=`echo $Conv_stack_TT" - "$ISC_TT | bc`
+# 			FILE=`ls *HZ | grep $station | awk 'NR==1'`
+# 			if (( $(echo "$ISC_ERR $ISC_CUTOFF" | awk '{print ($1 > $2)}') )) || (( $(echo "$ISC_ERR -$ISC_CUTOFF" | awk '{print ($1 < $2)}') ));
+# 			then
+# 				echo " difference between converted pick and ISC pick for "$station" is greater than $ISC_CUTOFF/-$ISC_CUTOFF...."
+# 				echo " Could reject the station "$station"...."
+# 				echo " Can gzip the file "$FILE"...."
+# 				echo "Check the file Conv_stack-ISC_picks.txt"
+# 				echo "gzip "$event"/"$FILE >> ../bad_files.txt # " # ISC_ERR"
+# 			fi
+# 		fi
+# 	fi
+# done
 
 
 ######## Calculate parameters for the XC mean analysis ############### Not sure what this means......
@@ -551,9 +585,9 @@ awk -v var=$SNR_MEAN '{print var, $1}' XC_mean2.out > XC_means2.txt # Mean SNR, 
 # C1.17
 rm *out *.stk *.stk2 *.corr *.corr2 *.new *.m gmt* *sgf *.s *.cut *.cut2
 
-if [ $PLOTTING == "YES" ];
+if [[ $PLOTTING == "YES" ]];
 then
-	/usr/local/bin/AARM_Make_plots_Event.sh
+	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_Make_plots_Event.sh
 else
 	echo "Skipping Event plotting routine...."
 fi
@@ -561,9 +595,10 @@ fi
 cd ..
 done
 
-if [ $PLOTTING == "YES" ];
+if [[ $PLOTTING == "YES" ]];
 then
-	/usr/local/bin/AARM_Make_plots_Dataset.sh
+	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_Make_plots_Dataset.sh
+	# echo "yes"
 else
 	echo "Skipping Dataset plotting routine...."
 fi
