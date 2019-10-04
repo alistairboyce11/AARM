@@ -218,4 +218,4 @@ ps2pdf $PSFILE
 rm *out gmt* *ps
 
 # gs "AARM_"$event".pdf"
-open "AARM_"$event".pdf"
+# open "AARM_"$event".pdf"

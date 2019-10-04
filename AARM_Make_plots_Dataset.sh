@@ -3,8 +3,8 @@
 # C4.1
 mac=`pwd | sed 's/\// /g' | awk '{print $2}'`
 # Dataset_name="SECAN"
-Dataset_name="Africa_data_summary"
-
+Dataset_name="EAR_dataset_summary"
+Title="East Africa"
 
 # This is the GMT Plotting script for the relative to absolute arrival time tool
 # Developed by Alistair Boyce (alistair.boyce10@imperial.ac.uk)
@@ -106,52 +106,14 @@ gmt pstext stats.out -JX $RANGE2 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSF
 
 rm prop.out total.out perc.out mean.out stats.out sd.out
 
-# C4.4 ####################### Rel-Arr conversion vs ISC Pick comparison
 
-cat ./??????????????/Conv*picks.txt > Conv_vs_ISC_pick_errors.out
-
-bin_width=0.25
-y_plot_ticks="a100f50"
-RANGE3="-R-2/2/0/200"
-gmt psbasemap $RANGE3 -JX9c/6c -X11.5c -Bpxa1f$bin_width+l"Rel-Abs conversion pick vs ISC pick (s)" -Bpy$y_plot_ticks+l"Frequency" -BWSne+t"Rel-Abs conversion pick vs ISC pick" -K -O >> $PSFILE
-
-if [[ -s Conv_vs_ISC_pick_errors.out ]] ; then
-echo "Conv_vs_ISC_pick_errors.out has data."
-
-THRESHOLD=0.5
-gmt gmtmath -T Conv_vs_ISC_pick_errors.out ABS $THRESHOLD LE SUM -S UPPER = prop.out # number of values less than $THRESHOLD
-wc -l Conv_vs_ISC_pick_errors.out | awk '{print $1}' > total.out # total number of values.
-gmt gmtmath prop.out total.out DIV 100 MUL = perc.out # Precentage less than 0.5
-
-TOTAL=`awk '{print $1}' total.out`
-PERC=`awk '{printf "%2.3f\n", $1}' perc.out`
-# echo "Percentage of "$TOTAL" ISC PICKS with difference of <"$THRESHOLD"s is "$PERC
-
-gmt pshistogram Conv_vs_ISC_pick_errors.out $RANGE3 -JX -W$bin_width -Z0 -F -L0.5p -P -Ggrey -O -K >> $PSFILE
-
-
-gmt gmtmath -S Conv_vs_ISC_pick_errors.out MEAN = mean.out
-gmt gmtmath -S Conv_vs_ISC_pick_errors.out STD = sd.out
-mean=`awk '{printf "%2.3f\n", $1}' mean.out`
-sd=`awk '{printf "%2.3f\n", $1}' sd.out`
-
-echo "-1.8 180 mean = "$mean > stats.out
-echo "-1.8 160 s.d. =  "$sd >> stats.out
-echo "-1.8 140 "$TOTAL" ISC picks" >> stats.out
-echo "-1.8 120 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
-
-gmt pstext stats.out -JX $RANGE3 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
-
-rm prop.out total.out perc.out mean.out stats.out sd.out
-
-fi
 
 # C4.5 ######################### Average Autocorrelation pick error vs SNR ############################
 
 cat ./??????????????/SNR_pick_error.txt > SNR_pick_error_all.out
 
 RANGE4="-R1/1000/0/0.5"
-gmt psbasemap $RANGE4 -JX9cl/6c -Y-10c -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Pick error" -BWeSn+t"Mean Autocorrelation pick error vs SNR" -K -O >> $PSFILE
+gmt psbasemap $RANGE4 -JX9cl/6c -X11.5c -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Pick error" -BWeSn+t"Mean Autocorrelation pick error vs SNR" -K -O >> $PSFILE
 gmt psxy SNR_pick_error_all.out $RANGE4 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
 
 # C4.6 ######################### TRACE - STACK XC vs SNR ############################
@@ -159,7 +121,7 @@ gmt psxy SNR_pick_error_all.out $RANGE4 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
 cat ./??????????????/XC_means2.txt > XC_means2_all.out
 
 RANGE5="-R1/1000/0/1"
-gmt psbasemap $RANGE5 -JX9cl/6c -X11.5c -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Trace XC with stack" -BWeSn+t"Trace-stack cross-correlation vs SNR" -K -O >> $PSFILE
+gmt psbasemap $RANGE5 -JX9cl/6c -Y-10c  -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Trace XC with stack" -BWeSn+t"Trace-stack cross-correlation vs SNR" -K -O >> $PSFILE
 gmt psxy XC_means2_all.out $RANGE5 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
 
 
@@ -170,7 +132,7 @@ awk '{print $1}' SNR_pick_error_all.out > ave_trace_SNR.out
 paste ave_trace_SNR.out stack_SNR.out > stack_v_trace.out
 
 RANGE6="-R1/1000/5/500000"
-gmt psbasemap $RANGE6 -JX9cl/6cl -Y10c -Bpxa2f1+l"Mean trace SNR" -Bpya2f1+l"Stack SNR" -BWeSn+t"Stack vs average trace SNR" -K -O >> $PSFILE
+gmt psbasemap $RANGE6 -JX9cl/6cl -X11.5c -Y10c -Bpxa2f1+l"Mean trace SNR" -Bpya2f1+l"Stack SNR" -BWeSn+t"Stack vs average trace SNR" -K -O >> $PSFILE
 gmt psxy stack_v_trace.out $RANGE6 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
 
 gmt psxy <<END $RANGE6 -JX -W2 -Wblack -O -K >> $PSFILE
@@ -181,6 +143,47 @@ gmt psxy <<END $RANGE6 -JX -W2 -Wblack -O -K >> $PSFILE
 500 500
 1000 1000 
 END
+
+
+# C4.4 ####################### Rel-Arr conversion vs ISC Pick comparison
+
+cat ./??????????????/Conv*picks.txt > Conv_vs_ISC_pick_errors.out
+
+if [ -s Conv_vs_ISC_pick_errors.out ]; 
+then
+	bin_width=0.25
+	y_plot_ticks="a100f50"
+	RANGE3="-R-2/2/0/200"
+	gmt psbasemap $RANGE3 -JX9c/6c -Y-10c -Bpxa1f$bin_width+l"Rel-Abs conversion pick vs ISC pick (s)" -Bpy$y_plot_ticks+l"Frequency" -BWSne+t"Rel-Abs conversion pick vs ISC pick" -K -O >> $PSFILE
+
+	echo "Conv_vs_ISC_pick_errors.out has data."
+
+	THRESHOLD=0.5
+	gmt gmtmath -T Conv_vs_ISC_pick_errors.out ABS $THRESHOLD LE SUM -S UPPER = prop.out # number of values less than $THRESHOLD
+	gmt gmtmath prop.out total.out DIV 100 MUL = perc.out # Precentage less than 0.5
+
+	TOTAL=`awk '{print $1}' total.out`
+	PERC=`awk '{printf "%2.3f\n", $1}' perc.out`
+	# echo "Percentage of "$TOTAL" ISC PICKS with difference of <"$THRESHOLD"s is "$PERC
+
+	gmt pshistogram Conv_vs_ISC_pick_errors.out $RANGE3 -JX -W$bin_width -Z0 -F -L0.5p -P -Ggrey -O -K >> $PSFILE
+
+
+	gmt gmtmath -S Conv_vs_ISC_pick_errors.out MEAN = mean.out
+	gmt gmtmath -S Conv_vs_ISC_pick_errors.out STD = sd.out
+	mean=`awk '{printf "%2.3f\n", $1}' mean.out`
+	sd=`awk '{printf "%2.3f\n", $1}' sd.out`
+
+	echo "-1.8 180 mean = "$mean > stats.out
+	echo "-1.8 160 s.d. =  "$sd >> stats.out
+	echo "-1.8 140 "$TOTAL" ISC picks" >> stats.out
+	echo "-1.8 120 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
+
+	gmt pstext stats.out -JX $RANGE3 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
+
+	rm prop.out total.out perc.out mean.out stats.out sd.out
+
+fi
 
 
 # C4.8 ######################### Compute some statistics ##########################
@@ -201,8 +204,8 @@ rm prop.out total.out perc.out
 
 ######################### PLOT TITLE ####################
 
-echo "0.0 0.0 "$Dataset_name" DATASET SUMMARY" > title.out
-gmt pstext title.out $RANGE1 -Y7.5 -X-12 -JX9c/6c -F+f14,Helvetica,black,bold+jCB -N -O >> $PSFILE
+echo "0.0 0.0 "$Title > title.out
+gmt pstext title.out $RANGE1 -Yf20.5 -Xf14 -JX9c/6c -F+f14,Helvetica,black,bold+jCB -N -O >> $PSFILE
 
 ps2pdf $PSFILE
 rm *out gmt* *ps

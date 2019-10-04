@@ -2,12 +2,14 @@
 
 # C1.1
 source ~/.bash_profile
-mac=`pwd | sed 's/\// /g' | awk '{print $2}'`
-mv bad_files.txt old_bad_files.txt
+mac=`echo $USER`
+if [ -f bad_files.txt ]; then
+	mv bad_files.txt old_bad_files.txt
+fi
 
 rm All_auto_corr_errors.txt All_d.txt Conv_vs_ISC_pick_errors.txt
 rm *_event_SUMMARY.txt *_phase_SUMMARY.txt
-event=`pwd | sed 's/\// /g' | awk '{print $NF}'`
+
 reference_file="/Users/$mac/Dropbox/ADAPTIVE_STACKING/ISC_arrival_checks/ISC_reference_picks.txt"
 # reference_file="/Users/$mac/Dropbox/ADAPTIVE_STACKING/SHARE_PACKAGE/ISC_FILES/ISC_reference_picks.txt"
 
@@ -57,29 +59,46 @@ fi
 
 # Set up the loop parameters - helps save time for re-runs after zipping bad files.
 
-# if [ $3 == "RERUN" ];
-# then
-# 	# echo $3
-# 	file_list=`awk '{print $1}' bad_events.txt`
-# else
-# 	# echo "use the normal for loop"
-# 	rm bad_events.txt
-# 	file_list="??????????????"
-#  fi
-#
-# # C1.2
-#
-# echo "Starting the loop HERE"
-# for event in $file_list; do
-#
-# echo $event
-# cd $event
+if [ $3 == "RERUN" ];
+then
+	# echo $3
+	file_list=`awk '{print $1}' bad_events.txt`
+else
+	# echo "use the normal for loop"
+	rm bad_events.txt
+	file_list="??????????????"
+	# file_list=$3
+	
+ fi
+
+# C1.2
+
+echo "Starting the loop HERE"
+for event in $file_list; do
+
+
+	# Move events with less than 3 files to POOR.
+	f_list=`echo $event/*HZ | grep -v *HZ |  wc -w `
+	if [[ $f_list -lt 3 ]]; then
+		echo "Less than 3 Files present"
+		cd $event
+		rm stack.sac stack2.sac stack2_auto.sac
+		rm *out *stk *stk2 *corr *new gmt* *.m *.s *.cut *.cut2 *.sgf *.pdf *txt
+		gunzip *gz
+		cd ..
+		echo "Moving "$event" to ./POOR/."
+		mv $event ./POOR/
+		continue
+	fi
+
+echo $event
+cd $event
 
 # |_|_|_|_|_|_|_|_|_|_|_|_|_| Method using SSS |_|_|_|_|_|_|_|_|_|_|_|_|_|
 
 
-rm stack.sac stack2.sac stack2_auto.sac
-rm *out *stk *stk2 *corr *corr2 *new gmt* *.m *.s *.cut
+# rm stack.sac stack2.sac stack2_auto.sac
+# rm *out *stk *stk2 *corr *corr2 *new gmt* *.m *.s *.cut
 rm Conv_stack-ISC_picks.txt SNR.txt auto_corr_errors2.txt d.txt *.ps SNR_pick_error.txt
 rm *_weightings.txt TT_calc_results.txt correlation_sort2.txt XC_means2.txt
 
@@ -97,6 +116,7 @@ sactosac -m *.bht
 # Calculate the XC between the stack and each trace to check the alignment.
 # rtr int
 
+
 sac << sacend
 
 read *.bht
@@ -104,6 +124,7 @@ cuterr fillz
 cut t1 -60 60
 read
 synchronize
+
 interpolate delta 0.025
 
 taper width 0.3
@@ -182,29 +203,8 @@ saclst user0 user5 f *.bht.stk.s > rms_pre_arrival_signal.out # filename, rms of
 sactosac -m *.bht.stk.s
 awk '{print $1, ($3/$2)}' rms_pre_arrival_signal.out | sed 's/\.bht.stk.s /.bht /g' > SNR.txt
 
+# C1.6 moved to after C1.10.1
 
-# C1.6
-########### Paste all files with Low SNR into Bad files or gzip straight away! ##############
-
-while read line; do
-TRACE_SNR=`echo $line | awk '{print $2}'`
-# SNR_CUTOFF=0.5
-if (( $(echo "$TRACE_SNR $SNR_CUTOFF" | awk '{print ($1 < $2)}') ));
-then
-	STAT=`echo $line | sed 's/\_/ /g' | sed 's/\./ /g' | awk '{print $3}'`
-	FILE=`echo $line | awk '{print $1}'`
-		
-	echo " SNR estimate for station "$STAT" is greater than $SNR_CUTOFF...."
-	echo " Can gzip the file "$FILE"...."
-	echo "Check the file SNR.txt"
-	echo "gzip "$event"/"$FILE >> ../bad_files.txt # " # SNR"
-	
-	# OR
-	# Remove all low SNR traces before stacking..... : 
-	# gzip ./*$STAT*
-	
-fi
-done<SNR.txt
 
 # C1.7
 # Grab correlation coefficients between stack and traces
@@ -232,7 +232,9 @@ then
 	# The extra 2 is a naming convention.
 	
 	### ADD the weighting function here....
-	/Users/$mac/Dropbox/ADAPTIVE_STACKING/SHARE_PACKAGE/weight_function.sh SNR_norm.out SNR_norm_weighted.out
+	# Please note this functionality was removed at review as for our application it was found to offer little improvement of the final stack.
+	# We leave the funcitonality to weight the stack non-linearly in future uses if required.
+	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_weight_function.sh SNR_norm.out SNR_norm_weighted.out
 	paste SNR.txt SNR_norm.out SNR_norm_weighted.out > Noise_weightings.txt # filename, SNR, normalized SNR, weighted normalized SNR
 	awk '{print "addstack "$1".stk2 weight "$4}' Noise_weightings.txt > addstack.m
 	# Make Macro to write unique filesnames these files
@@ -254,7 +256,8 @@ else
 		# The extra 2 is a naming convention.
 		
 		#### ADD the weighting function here
-		/Users/$mac/Dropbox/ADAPTIVE_STACKING/SHARE_PACKAGE/weight_function.sh correlation_norm.out correlation_norm_weighted.out
+		# Linear weighting function as above.
+		/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_weight_function.sh correlation_norm.out correlation_norm_weighted.out
 		paste correlation.out correlation_norm.out correlation_norm_weighted.out > correlation_weightings.txt # filename, correlation co-efficient, XC location (correction), normalized correlation co-efficient, weighted norm correlation co-efficient
 
 		awk '{print "addstack "$1" weight "$5}' correlation_weightings.txt | sed 's/\.stk.cut.corr /.new.stk2 /g' > addstack.m 
@@ -262,15 +265,29 @@ else
 
 		# Make small adjustments to Rel-Arr alignment based on XC peak shift from 0 - should improve the stack....
 		# Don't overwrite EHZ files with new corrected stack times, save a subset with append .new in sac macro
-
+		# Use QC parameters to check applied XC peak shift is not greater than XC_CUTOFF, else, gzip in bad_files.txt
+		# Cannot force to zero as this affects error analysis.
+		
+		echo $XC_CUTOFF > ADJ_HIGH.out
+		echo "-"$XC_CUTOFF > ADJ_LOW.out
+		
 		for file in *.bht; do
 			grep $file correlation.out | awk '{print $3}' > adjust.out # T0 adjustment
+			
+			IN_ADJ_RANGE=`gmt gmtmath adjust.out ADJ_LOW.out ADJ_HIGH.out INRANGE =`
+			if [[ $IN_ADJ_RANGE != 1 ]]; then
+				awk -v var=$XC_CUTOFF '{print "Suggested XC peak shift: "$1" not in range +/- "var}' adjust.out
+				echo " Can gzip the file "$file" ...."
+				echo "gzip "$event"/"$file >> ../bad_files.txt 
+			fi
 			grep $file orig_headers.out | awk '{print $3}' > old_T1.out  # old T1
 			gmt gmtmath old_T1.out adjust.out ADD = new_T1.out
 			new_T1=`awk '{print $1}' new_T1.out`
 			echo "read "$file"; chnhdr t1 "$new_T1"; write append .new" >> correct_T1.m # Paste the new T1 header into *.bht.new
 			echo "m normalize.m "$file".new.stk2" >> norm_stk2.m # will individually normalize the new.stk2 files later on.
 		done
+		
+		rm ADJ_HIGH.out ADJ_LOW.out
 
 		# Prepare files before stacking
 		# Normalize the traces using macro normalize.m (Files *stk2 are overwritten)
@@ -281,6 +298,7 @@ else
 		echo "cut t1 -60 60" >> mk_stk2.m
 		echo "read" >> mk_stk2.m
 		echo "synchronize" >> mk_stk2.m
+		
 		echo "interpolate delta 0.025" >> mk_stk2.m
 		# echo "int" >> mk_stk2.m
 		echo "taper width 0.3" >> mk_stk2.m
@@ -337,9 +355,47 @@ quit
 sacend3
 # rm addstack.m
 
+# C1.10.1 
+#  Inlcude a little cut that removes events that have poor stacks and thus no arrival time pick
+
+if [[ "$(sachdrinfo stack2.sac a)" == *"UNDEFINED"* ]]; then
+	echo "No pick present - Move event to POOR and continue"
+	rm stack.sac stack2.sac stack2_auto.sac
+	rm *out *stk *stk2 *corr *new gmt* *.m *.s *.cut *.cut2 *.sgf *.pdf *txt
+	cd ..
+	mv $event ./POOR/
+	grep -v $event bad_files.txt > bad_files.temp
+	mv bad_files.temp bad_files.txt
+	continue
+fi
+
+# C1.6
+########### Paste all files with Low SNR into Bad files or gzip straight away! ##############
+# Had to be moved to here so that events moved to POOR are not included!
+
+while read line; do
+TRACE_SNR=`echo $line | awk '{print $2}'`
+# SNR_CUTOFF=0.5
+if (( $(echo "$TRACE_SNR $SNR_CUTOFF" | awk '{print ($1 < $2)}') ));
+then
+	STAT=`echo $line | sed 's/\_/ /g' | sed 's/\./ /g' | awk '{print $3}'`
+	FILE=`echo $line | awk '{print $1}'`
+		
+	echo " SNR estimate for station "$STAT" is less than $SNR_CUTOFF...."
+	echo " Can gzip the file "$FILE"...."
+	echo "Check the file SNR.txt"
+	echo "gzip "$event"/"$FILE >> ../bad_files.txt # " # SNR"
+	
+	# OR
+	# Remove all low SNR traces before stacking..... : 
+	# gzip ./*$STAT*
+	
+fi
+done<SNR.txt
+
+
 # C1.11
 # Calculate the XC between the stack2 and each stacked trace to check the alignment.
-
 sac << sacend
 read stack2.sac *stk2
 cut -10 10
@@ -531,20 +587,21 @@ rm *out *.stk *.stk2 *.corr *.corr2 *.new *.m gmt* *.bht.s *.bht.stk.s *.cut *.c
 
 if [ $PLOTTING == "YES" ];
 then
-	/Users/$mac/Dropbox/ADAPTIVE_STACKING/SHARE_PACKAGE/SYNTH_VERSION/Make_plots_Event.sh
+	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_Make_plots_Event.sh
 else
 	echo "Skipping Event plotting routine...."
 fi
 
-# cd ..
-# done
-#
-# if [ $PLOTTING == "YES" ];
-# then
-# 	/Users/$mac/Dropbox/ADAPTIVE_STACKING/SHARE_PACKAGE/SYNTH_VERSION/Make_plots_Dataset.sh
-# else
-# 	echo "Skipping Dataset plotting routine...."
-# fi
+cd ..
+done
+
+if [ $PLOTTING == "YES" ];
+then
+	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_Make_plots_Dataset.sh
+	# echo "yes"
+else
+	echo "Skipping Dataset plotting routine...."
+fi
 
 # C1.18
 
