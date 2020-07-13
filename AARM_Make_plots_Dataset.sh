@@ -3,12 +3,12 @@
 # C4.1
 mac=`pwd | sed 's/\// /g' | awk '{print $2}'`
 # Dataset_name="SECAN"
-Dataset_name="EAR_dataset_summary"
-Title="East Africa"
+Dataset_name="MAD_dataset_summary"
+Title="Madagascar"
 
 # This is the GMT Plotting script for the relative to absolute arrival time tool
 # Developed by Alistair Boyce (alistair.boyce10@imperial.ac.uk)
-# Last updated on 06-01-2017
+# Last updated on 26-07-2020
 
 # Programs required: GMT5, sactosac, sac2xy, saclst
 
@@ -69,6 +69,8 @@ echo "-4.5 1200 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
 
 gmt pstext stats.out -JX $RANGE1 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
 
+echo "D" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+
 rm prop.out total.out perc.out mean.out stats.out sd.out
 
 # C4.3 ################## Autocorrelation error estimates ###########################
@@ -104,6 +106,8 @@ echo "0.35 3200 s.d. =  "$sd >> stats.out
 echo "0.35 2800 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
 gmt pstext stats.out -JX $RANGE2 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
 
+echo "A" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+
 rm prop.out total.out perc.out mean.out stats.out sd.out
 
 
@@ -116,6 +120,9 @@ RANGE4="-R1/1000/0/0.5"
 gmt psbasemap $RANGE4 -JX9cl/6c -X11.5c -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Pick error" -BWeSn+t"Mean Autocorrelation pick error vs SNR" -K -O >> $PSFILE
 gmt psxy SNR_pick_error_all.out $RANGE4 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
 
+echo "B" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+
+
 # C4.6 ######################### TRACE - STACK XC vs SNR ############################
 
 cat ./??????????????/XC_means2.txt > XC_means2_all.out
@@ -123,6 +130,8 @@ cat ./??????????????/XC_means2.txt > XC_means2_all.out
 RANGE5="-R1/1000/0/1"
 gmt psbasemap $RANGE5 -JX9cl/6c -Y-10c  -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Trace XC with stack" -BWeSn+t"Trace-stack cross-correlation vs SNR" -K -O >> $PSFILE
 gmt psxy XC_means2_all.out $RANGE5 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
+
+echo "E" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
 
 
 # C4.7 ######################### STACK2 SNR vs Ave trace SNR ############################
@@ -143,6 +152,8 @@ gmt psxy <<END $RANGE6 -JX -W2 -Wblack -O -K >> $PSFILE
 500 500
 1000 1000 
 END
+
+echo "C" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
 
 
 # C4.4 ####################### Rel-Arr conversion vs ISC Pick comparison
