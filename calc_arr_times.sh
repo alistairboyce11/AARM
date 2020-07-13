@@ -617,6 +617,7 @@ sed 's/\// /g' bad_files.txt | awk '{print $2}' | sort -u > bad_events.txt
 echo " "
 echo "Please use file bad_files.txt to zip bad files and repeat for the events below"
 echo " The COMMAND : while read line; do echo line; done<bad_files.txt       should work"
+echo "    Remember : include dollar sign and backwards appost. within <echo line> ......"
 
 more bad_events.txt
 while read line; do
