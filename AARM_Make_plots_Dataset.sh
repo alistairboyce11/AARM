@@ -69,7 +69,7 @@ echo "-4.5 1200 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
 
 gmt pstext stats.out -JX $RANGE1 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
 
-echo "D" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+echo "d" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 
 rm prop.out total.out perc.out mean.out stats.out sd.out
 
@@ -106,7 +106,7 @@ echo "0.35 3200 s.d. =  "$sd >> stats.out
 echo "0.35 2800 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
 gmt pstext stats.out -JX $RANGE2 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
 
-echo "A" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+echo "a" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 
 rm prop.out total.out perc.out mean.out stats.out sd.out
 
@@ -120,7 +120,7 @@ RANGE4="-R1/1000/0/0.5"
 gmt psbasemap $RANGE4 -JX9cl/6c -X11.5c -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Pick error" -BWeSn+t"Mean Autocorrelation pick error vs SNR" -K -O >> $PSFILE
 gmt psxy SNR_pick_error_all.out $RANGE4 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
 
-echo "B" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+echo "b" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 
 
 # C4.6 ######################### TRACE - STACK XC vs SNR ############################
@@ -131,7 +131,7 @@ RANGE5="-R1/1000/0/1"
 gmt psbasemap $RANGE5 -JX9cl/6c -Y-10c  -Bpxa2f1+l"Mean trace SNR" -Bpya0.5f0.1+l"Mean Trace XC with stack" -BWeSn+t"Trace-stack cross-correlation vs SNR" -K -O >> $PSFILE
 gmt psxy XC_means2_all.out $RANGE5 -JX -Sc0.3c -W1 -Ggrey -O -K >> $PSFILE
 
-echo "E" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+echo "e" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 
 
 # C4.7 ######################### STACK2 SNR vs Ave trace SNR ############################
@@ -153,7 +153,7 @@ gmt psxy <<END $RANGE6 -JX -W2 -Wblack -O -K >> $PSFILE
 1000 1000 
 END
 
-echo "C" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D-0.2/0.2 -F+f10,Helvetica,black+jRB+cRB >> $PSFILE
+echo "c" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 
 
 # C4.4 ####################### Rel-Arr conversion vs ISC Pick comparison
@@ -191,7 +191,7 @@ then
 	echo "-1.8 120 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
 
 	gmt pstext stats.out -JX $RANGE3 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
-
+    echo "f" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 	rm prop.out total.out perc.out mean.out stats.out sd.out
 
 fi
