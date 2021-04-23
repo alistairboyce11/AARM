@@ -3,12 +3,12 @@
 # C4.1
 mac=`pwd | sed 's/\// /g' | awk '{print $2}'`
 # Dataset_name="SECAN"
-Dataset_name="MAD_dataset_summary"
-Title="Madagascar"
+Dataset_name="NWC_dataset_summary"
+Title="Northwest Canada"
 
 # This is the GMT Plotting script for the relative to absolute arrival time tool
-# Developed by Alistair Boyce (alistair.boyce10@imperial.ac.uk)
-# Last updated on 26-07-2020
+# Developed by Alistair Boyce (alistair.boyce10@imperial.ac.uk / ab2568@cam.ac.uk)
+# Last updated on 31-03-2021
 
 # Programs required: GMT5, sactosac, sac2xy, saclst
 
@@ -26,7 +26,7 @@ gmt set FONT_TITLE				= 12p
 gmt set FONT_LABEL				= 10p
 gmt set FONT_ANNOT_PRIMARY		= 10p
 gmt set FONT_ANNOT_SECONDARY	= 10p
-gmt set PS_MEDIA 				= 600x1000
+gmt set PS_MEDIA 				= 1000x600
 gmt set PS_PAGE_ORIENTATION 	= LANDSCAPE
 gmt set PS_LINE_CAP 			= round
 gmt set FORMAT_DATE_IN 			= yyyymmdd
@@ -40,11 +40,11 @@ rm $Dataset_name".ps"
 cat ./??????????????/d.txt > All_d.out
 
 bin_width=0.5
-y_plot_ticks="a500f100"
-RANGE1="-R-6/6/0/2000"
+y_plot_ticks="a5000f1000"
+RANGE1="-R-6/6/0/10000"
 
-gmt psbasemap $RANGE1 -JX9c/6c -Bpxa2f$bin_width+l"Absolute arrival-time residual" -Bpy$y_plot_ticks+l"Frequency" -BWSne+t"Absolute arrival-time residual distribution" -K > $PSFILE
-gmt pshistogram All_d.out $RANGE1 -JX -W$bin_width -Z0 -F -L0.5p -P -Ggrey -O -K >> $PSFILE
+gmt psbasemap $RANGE1 -JX9c/6c -Bpxa2f$bin_width+l"Absolute arrival-time residual" -Bpy$y_plot_ticks+l"Frequency" -BWSne+t"Absolute arrival-time residual distribution" -K -P > $PSFILE
+gmt pshistogram All_d.out $RANGE1 -JX -W$bin_width -Z0 -F -L0.5p -Ggrey -O -K >> $PSFILE
 
 # Do dataset residual distribution summary - All_d.out
 
@@ -62,12 +62,12 @@ gmt gmtmath -S All_d.out STD = sd.out
 mean=`awk '{printf "%2.3f\n", $1}' mean.out`
 sd=`awk '{printf "%2.3f\n", $1}' sd.out`
 
-echo "-4.5 1800 mean = "$mean > stats.out
-echo "-4.5 1600 s.d. =  "$sd >> stats.out
-echo "-4.5 1400 "$TOTAL" traces" >> stats.out
-echo "-4.5 1200 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
+echo "0.1 0.9 mean = "$mean > stats.out
+echo "0.1 0.8 s.d. =  "$sd >> stats.out
+echo "0.1 0.7 "$TOTAL" traces" >> stats.out
+echo "0.1 0.6 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
 
-gmt pstext stats.out -JX $RANGE1 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
+gmt pstext stats.out -JX -R0/1/0/1 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
 
 echo "d" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 
@@ -78,8 +78,8 @@ rm prop.out total.out perc.out mean.out stats.out sd.out
 cat ./??????????????/auto_corr_errors2.txt | awk '{print $2}' > All_auto_corr_errors.out
 
 bin_width=0.05
-y_plot_ticks="a1000f100"
-RANGE2="-R-0/0.5/0/4000"
+y_plot_ticks="a5000f1000"
+RANGE2="-R-0/0.5/0/20000"
 
 # Do dataset autocorrelation pick error estimate distribution - All_auto_corr_errors.out
 
@@ -94,17 +94,18 @@ PERC=`awk '{printf "%2.3f\n", $1}' perc.out`
 
 
 gmt psbasemap $RANGE2 -JX9c/6c -Y10c -Bpxa0.25f$bin_width+l"Pick error estimate" -Bpy$y_plot_ticks+l"Frequency" -BWSne+t"Autocorrelation error estimate" -K -O >> $PSFILE
-gmt pshistogram All_auto_corr_errors.out $RANGE2 -JX -W$bin_width -Z0 -F -L0.5p -P -Ggrey -O -K >> $PSFILE
+gmt pshistogram All_auto_corr_errors.out $RANGE2 -JX -W$bin_width -Z0 -F -L0.5p -Ggrey -O -K >> $PSFILE
 
 gmt gmtmath -S All_auto_corr_errors.out MEAN = mean.out
 gmt gmtmath -S All_auto_corr_errors.out STD = sd.out
 mean=`awk '{printf "%2.3f\n", $1}' mean.out`
 sd=`awk '{printf "%2.3f\n", $1}' sd.out`
 
-echo "0.35 3600 mean = "$mean > stats.out
-echo "0.35 3200 s.d. =  "$sd >> stats.out
-echo "0.35 2800 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
-gmt pstext stats.out -JX $RANGE2 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
+echo "0.65 0.9 mean = "$mean > stats.out
+echo "0.65 0.8 s.d. =  "$sd >> stats.out
+echo "0.65 0.7 "$PERC"% < +/-"$THRESHOLD"s" >> stats.out
+gmt pstext stats.out -JX -R0/1/0/1 -F+f8,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
+
 
 echo "a" | gmt pstext -J -R -O -K -Gwhite -N -W1 -C0.1 -D0.2/-0.2 -F+f10,Helvetica,black+jLT+cLT >> $PSFILE
 
@@ -177,7 +178,7 @@ then
 	PERC=`awk '{printf "%2.3f\n", $1}' perc.out`
 	# echo "Percentage of "$TOTAL" ISC PICKS with difference of <"$THRESHOLD"s is "$PERC
 
-	gmt pshistogram Conv_vs_ISC_pick_errors.out $RANGE3 -JX -W$bin_width -Z0 -F -L0.5p -P -Ggrey -O -K >> $PSFILE
+	gmt pshistogram Conv_vs_ISC_pick_errors.out $RANGE3 -JX -W$bin_width -Z0 -F -L0.5p -Ggrey -O -K >> $PSFILE
 
 
 	gmt gmtmath -S Conv_vs_ISC_pick_errors.out MEAN = mean.out
@@ -218,7 +219,7 @@ rm prop.out total.out perc.out
 echo "0.0 0.0 "$Title > title.out
 gmt pstext title.out $RANGE1 -Yf20.5 -Xf14 -JX9c/6c -F+f14,Helvetica,black,bold+jCB -N -O >> $PSFILE
 
-ps2pdf $PSFILE
+gmt psconvert -Tf $PSFILE
 rm *out gmt* *ps
 
 # gs $Dataset_name".pdf"
