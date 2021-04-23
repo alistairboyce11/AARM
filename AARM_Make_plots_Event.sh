@@ -23,7 +23,7 @@ gmt set FONT_TITLE				= 12p
 gmt set FONT_LABEL				= 10p
 gmt set FONT_ANNOT_PRIMARY		= 10p
 gmt set FONT_ANNOT_SECONDARY	= 10p
-gmt set PS_MEDIA 				= 600x1000
+gmt set PS_MEDIA 				= 1000x600
 gmt set PS_PAGE_ORIENTATION 	= LANDSCAPE
 gmt set PS_LINE_CAP 			= round
 
@@ -56,7 +56,7 @@ echo "0.55 0.65 HIGH stack contribution" > label.out
 echo "0.05 0.65 "$PERC"% traces" >> label.out
 echo "0.7 0.05 "$TOTAL" total traces" >> label.out
 
-gmt psbasemap $RANGE1 -JX9c/6c -Bpxa0.2f0.1+l"Input normalized points" -Bpya0.2f0.1+l"Output weighting" -BWSne+t"Weightings mapping" -K > $PSFILE
+gmt psbasemap $RANGE1 -JX9c/6c -Bpxa0.2f0.1+l"Input normalized points" -Bpya0.2f0.1+l"Output weighting" -BWSne+t"Weightings mapping" -K -P > $PSFILE
 gmt psxy weighting_function.out $RANGE1 -JX -Sc0.3c -Gblue -W1 -O -K >> $PSFILE
 gmt psxy thres_line.out $RANGE1 -JX -Wthin,- -O -K >> $PSFILE
 gmt pstext label.out $RANGE1 -JX -F+f10,Helvetica,black,bold+jLB -N -O -K >> $PSFILE
@@ -110,7 +110,7 @@ y_plot_ticks=`echo "a"$y_plot_ticks1"f"$y_plot_ticks2`
 RANGE3="-R$low/$high/0/$ylim"
 
 gmt psbasemap $RANGE3 -X11.5c -JX9c/6c -Bpxa1f$bin_width+l"Residual (s)" -Bpy$y_plot_ticks+l"Frequency" -BWSne+t"Residual Histogram" -K -O >> $PSFILE
-gmt pshistogram d.txt $RANGE3 -JX9c/6c -W$bin_width -Z0 -F -L0.5p -P -Ggrey -O -K >> $PSFILE
+gmt pshistogram d.txt $RANGE3 -JX9c/6c -W$bin_width -Z0 -F -L0.5p -Ggrey -O -K >> $PSFILE
 
 rm MAX.out MIN.out BW.out sample_size.out ylim.out
 
@@ -170,7 +170,7 @@ bin_width=`awk '{print $1}' BW.out`
 RANGE5="-R$low/$high/0/$ylim"
 
 gmt psbasemap $RANGE5 -X11.5c -Y10c -JX9c/6c -Bpxa0.2f$bin_width+l"Pick error estimate" -Bpy$y_plot_ticks+l"Frequency" -BWSne+t"Autocorrelation Pick error estimate" -K -O >> $PSFILE
-gmt pshistogram errors_est.out $RANGE5 -JX -W$bin_width -Z0 -F -L0.5p -P -Ggrey -K -O >> $PSFILE
+gmt pshistogram errors_est.out $RANGE5 -JX -W$bin_width -Z0 -F -L0.5p -Ggrey -K -O >> $PSFILE
 
 rm errors_est.out MAX.out MIN.out BW.out 
 
@@ -196,7 +196,7 @@ then
 	RANGE6="-R$low/$high/0/$sample_size"
 	
 	gmt psbasemap $RANGE6 -Y-10c -JX9c/6c -Bpxa1f$bin_width+l"Residual (s)" -Bpy$yscale+l"Frequency" -BWSne+t"ISC Pick differential" -K -O >> $PSFILE
-	gmt pshistogram Conv_stack-ISC_picks.txt -JX $RANGE6 -W$bin_width -F -Z0 -L0.5p -P -Ggrey -K -O >> $PSFILE
+	gmt pshistogram Conv_stack-ISC_picks.txt -JX $RANGE6 -W$bin_width -F -Z0 -L0.5p -Ggrey -K -O >> $PSFILE
 
 	rm MAX.out MIN.out BW.out
 	######################### PLOT TITLE ####################
@@ -214,7 +214,7 @@ else
 	rm title.out gmt*
 fi
 
-ps2pdf $PSFILE
+gmt psconvert -Tf $PSFILE
 rm *out gmt* *ps
 
 # gs "AARM_"$event".pdf"

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # C1.1
-source ~/.profile
+source ~/.bash_profile
 mac=`echo $USER`
 
 if [[ -f bad_files.txt ]]; then
@@ -11,12 +11,12 @@ fi
 rm All_auto_corr_errors.txt All_d.txt Conv_vs_ISC_pick_errors.txt
 rm *_event_SUMMARY.txt *_phase_SUMMARY.txt
 
-reference_file="/Volumes/TRANS_AB/DATA/AFRICA/ISC_DATA/ISC_reference_picks.txt"
+# reference_file="/Volumes/TRANS_AB/DATA/AFRICA/ISC_DATA/ISC_reference_picks.txt"
 
 # Use file "TT_calculator_ISC.sh" to convert ISC csv download to readable form:
 # JWeed reference time, ISC date, ISC time, JWeed_time - ISC-time = EQ source error (can be opposite if loop is used), station, station lat, station lon, phase, absolute travel time
 
-# Qaulity control parameters
+# Quality control parameters
 ISC_CUTOFF=2.0
 SNR_CUTOFF=1
 XC_CUTOFF=0.2
@@ -30,7 +30,7 @@ PLOTTING=$2
 # Predicted arrivals - T1
 # Rel-Arr alignment - T0
 
-if [[ $# == 0 ]];
+if [[ $# -lt 2 ]];
 then
 	echo " NO Weighting scheme given"
 	echo "USEAGE:   calc_arr_times.sh <SCHEME> <PLOTTING> <RERUN>"
@@ -40,21 +40,23 @@ then
 	exit
 fi
 
-if [[ $1 == "XC" ]];
-then
+if [[ $1 == "XC" ]]; then
 	WEIGHTING_SCHEME=XC
-else
-	if [[ $1 == "NOISE" ]];
-	then
-		WEIGHTING_SCHEME=NOISE
-	else
-		echo "Incorrect Weighting scheme given"
-		echo "USEAGE:   calc_arr_times.sh <SCHEME> <PLOTTING> <RERUN>"
-		echo "EXAMPLE:  calc_arr_times.sh XC NO"
-		echo "EXAMPLE:  calc_arr_times.sh NOISE YES RERUN"
-		echo
-		exit
+	if [ ! -d XC_PROCESSED ]; then
+		mkdir XC_PROCESSED
 	fi
+elif [[ $1 == "NOISE" ]];then
+	WEIGHTING_SCHEME=NOISE
+	if [ ! -d NOISE_PROCESSED ]; then
+		mkdir NOISE_PROCESSED
+	fi
+else
+	echo "Incorrect Weighting scheme given"
+	echo "USEAGE:   calc_arr_times.sh <SCHEME> <PLOTTING> <RERUN>"
+	echo "EXAMPLE:  calc_arr_times.sh XC NO"
+	echo "EXAMPLE:  calc_arr_times.sh NOISE YES RERUN"
+	echo
+	exit
 fi
 
 # Set up the loop parameters - helps save time for re-runs after zipping bad files.
@@ -87,6 +89,9 @@ if [[ $f_list -lt 3 ]]; then
 	gunzip *gz
 	cd ..
 	echo "Moving "$event" to ./POOR/."
+	if [ ! -d POOR ]; then
+		mkdir POOR
+	fi
 	mv $event ./POOR/
 	continue
 fi
@@ -103,7 +108,7 @@ rm Conv_stack-ISC_picks.txt SNR.txt auto_corr_errors2.txt d.txt *.ps SNR_pick_er
 rm *_weightings.txt TT_calc_results.txt correlation_sort2.txt XC_means2.txt
 
 
-
+sactosac -m *.?HZ
 sactosac -f *.?HZ
 saclst o t0 t1 f *.?HZ > orig_headers.out
 sactosac -m *.?HZ
@@ -234,7 +239,7 @@ then
 	### ADD the weighting function here....
 	# Please note this functionality was removed at review as for our application it was found to offer little improvement of the final stack.
 	# We leave the funcitonality to weight the stack non-linearly in future uses if required.
-	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_weight_function.sh SNR_norm.out SNR_norm_weighted.out
+	/Users/$mac/Google_Drive/GITHUB_AB/AARM/AARM_weight_function.sh SNR_norm.out SNR_norm_weighted.out
 	paste SNR.txt SNR_norm.out SNR_norm_weighted.out > Noise_weightings.txt # filename, SNR, normalized SNR, weighted normalized SNR
 	awk '{print "addstack "$1".stk2 weight "$4}' Noise_weightings.txt > addstack.m
 	# Make Macro to write unique filesnames these files
@@ -257,7 +262,7 @@ else
 		
 		#### ADD the weighting function here
 		# Linear weighting function as above.
-		/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_weight_function.sh correlation_norm.out correlation_norm_weighted.out
+		/Users/$mac/Google_Drive/GITHUB_AB/AARM/AARM_weight_function.sh correlation_norm.out correlation_norm_weighted.out
 		paste correlation.out correlation_norm.out correlation_norm_weighted.out > correlation_weightings.txt # filename, correlation co-efficient, XC location (correction), normalized correlation co-efficient, weighted norm correlation co-efficient
 
 		awk '{print "addstack "$1" weight "$5}' correlation_weightings.txt | sed 's/\.stk.cut.corr /.new.stk2 /g' > addstack.m 
@@ -363,6 +368,9 @@ if [[ "$(sachdrinfo stack2.sac a)" == *"UNDEFINED"* ]]; then
 	rm stack.sac stack2.sac stack2_auto.sac
 	rm *out *stk *stk2 *corr *new gmt* *.m *.s *.cut *.cut2 *.sgf *.pdf *txt
 	cd ..
+	if [ ! -d POOR ]; then
+		mkdir POOR
+	fi
 	mv $event ./POOR/
 	grep -v $event bad_files.txt > bad_files.temp
 	mv bad_files.temp bad_files.txt
@@ -587,7 +595,7 @@ rm *out *.stk *.stk2 *.corr *.corr2 *.new *.m gmt* *sgf *.s *.cut *.cut2
 
 if [[ $PLOTTING == "YES" ]];
 then
-	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_Make_plots_Event.sh
+	/Users/$mac/Google_Drive/GITHUB_AB/AARM/AARM_Make_plots_Event.sh
 else
 	echo "Skipping Event plotting routine...."
 fi
@@ -597,7 +605,7 @@ done
 
 if [[ $PLOTTING == "YES" ]];
 then
-	/Users/$mac/Dropbox/File_Sharing/GITHUB_AB/AARM/AARM_Make_plots_Dataset.sh
+	/Users/$mac/Google_Drive/GITHUB_AB/AARM/AARM_Make_plots_Dataset.sh
 	# echo "yes"
 else
 	echo "Skipping Dataset plotting routine...."
